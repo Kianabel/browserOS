@@ -60,7 +60,11 @@ class CustomWindow extends HTMLElement {
     const resizeHandle = document.createElement("div");
     resizeHandle.classList.add("resize-handle", "bottom-right");
 
+    const contentSlot = document.createElement("slot");
+    contentSlot.classList.add("window-content");
+
     container.appendChild(topBar);
+    container.appendChild(contentSlot); 
     container.appendChild(resizeHandle);
 
     // Attach
@@ -76,7 +80,9 @@ class CustomWindow extends HTMLElement {
         min-height: 144px;
         min-width: 192px;
         border-radius: 10px;
-        background-color: ${this.getRandomColor()};
+        backdrop-filter: blur(5px);
+        background-color: transparent;
+        border: solid 3px #3f3f3f;
       }
 
       .topBar {
