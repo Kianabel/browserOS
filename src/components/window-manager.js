@@ -87,6 +87,7 @@ class CustomWindow extends HTMLElement {
 
       .topBar {
         width: inherit;
+        min-width: 192px;
         height: 33px;
         background-color: #3f3f3f;
         border-top-left-radius: 7px;

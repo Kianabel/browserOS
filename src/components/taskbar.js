@@ -4,64 +4,70 @@ class Taskbar extends HTMLElement {
 
     const shadow = this.attachShadow({ mode: "open" });
 
+    // Create the container for the taskbar
     const container = document.createElement("div");
     container.classList.add("taskbarClass");
 
-    const fullWindowIcon = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "svg"
-    );
-    fullWindowIcon.setAttribute("fill", "none");
-    fullWindowIcon.setAttribute("viewBox", "0 0 24 24");
-    fullWindowIcon.setAttribute("stroke-width", "1.3");
-    fullWindowIcon.setAttribute("stroke", "currentColor");
-    fullWindowIcon.classList.add("icon", "makefull-window");
+    // Placeholder for taskbar items (You can add icons or other elements here)
+    const taskbarItem1 = document.createElement("div");
+    taskbarItem1.classList.add("taskbar-item");
+    taskbarItem1.textContent = "Item 1"; // Example item, replace with an icon or app launcher
 
-    const fullWindowPath = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path"
-    );
-    fullWindowPath.setAttribute("stroke-linecap", "round");
-    fullWindowPath.setAttribute("stroke-linejoin", "round");
-    fullWindowPath.setAttribute(
-      "d",
-      "M16.5 8.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h2.25m8.25-8.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-7.5A2.25 2.25 0 0 1 8.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 0 0-2.25 2.25v6"
-    );
-    fullWindowIcon.appendChild(fullWindowPath);
+    const taskbarItem2 = document.createElement("div");
+    taskbarItem2.classList.add("taskbar-item");
+    taskbarItem2.textContent = "Item 2"; // Example item, replace with an icon or app launcher
 
+    // Append items to the taskbar container
+    container.appendChild(taskbarItem1);
+    container.appendChild(taskbarItem2);
+
+    // Attach the container to the shadow DOM
     shadow.appendChild(container);
-    container.appendChild(fullWindowIcon);
 
+    // Apply styles to the taskbar
     const style = document.createElement("style");
     style.textContent = `
       .taskbarClass {
-        height: 4vh;
-        width: 50vw;
-        position: absolute;
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 50px;
+        width: 70%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         border-radius: 10px;
-        background-color: #3f3f3f
+        background-color: #3f3f3f;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        z-index: 20;
       }
 
-      .icon {
-        margin: 2px 6px 0 0;
-        color: rgb(131, 131, 131);
+      .taskbar-item {
+        margin: 0 10px;
+        color: white;
+        font-size: 14px;
         cursor: pointer;
-        width: 30px;
-        height: 30px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
       }
 
-      .icon:hover {
-        transform: scale(1.1);
+      .taskbar-item:hover {
+        background-color: rgba(255, 255, 255, 0.2);
       }
 
-      .icon:active {
-        color: rgb(141, 141, 141);
+      .taskbar-item:active {
+        background-color: rgba(255, 255, 255, 0.3);
       }
-
     `;
 
     shadow.appendChild(style);
   }
 }
 
+// Define the custom element
 customElements.define("taskbar-c", Taskbar);
+
+// Example usage: adding the taskbar to the body
+document.body.appendChild(document.createElement("taskbar-c"));
