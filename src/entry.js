@@ -3,4 +3,8 @@
 import "./components/window-manager.js"
 import "./components/taskbar.js"
 
-//aplications
+//applications
+
+import * as AppSettings from "./applications/app-settings.js";
+
+export const availableApplications = [AppSettings];
