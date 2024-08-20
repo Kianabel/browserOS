@@ -2,106 +2,114 @@ class CustomWindow extends HTMLElement {
   constructor() {
     super();
 
-    const shadow = this.attachShadow({ mode: "open" });
+    const Shadow = this.attachShadow({ mode: "open" });
 
-    // Window structure
-    const container = document.createElement("div");
-    container.classList.add("windowClass");
+    const Container = document.createElement("div");
+    Container.classList.add("windowClass");
 
-    const topBar = document.createElement("div");
-    topBar.classList.add("topBar");
+    const TopBar = document.createElement("div");
+    TopBar.classList.add("topBar");
 
-    const minimizeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    minimizeIcon.setAttribute("fill", "none");
-    minimizeIcon.setAttribute("viewBox", "0 0 24 24");
-    minimizeIcon.setAttribute("stroke-width", "1.3");
-    minimizeIcon.setAttribute("stroke", "currentColor");
-    minimizeIcon.classList.add("icon", "minimize");
+    const MinimizeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    MinimizeIcon.setAttribute("fill", "none");
+    MinimizeIcon.setAttribute("viewBox", "0 0 24 24");
+    MinimizeIcon.setAttribute("stroke-width", "1.3");
+    MinimizeIcon.setAttribute("stroke", "currentColor");
+    MinimizeIcon.classList.add("icon", "minimize");
 
-    const minimizePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    minimizePath.setAttribute("stroke-linecap", "round");
-    minimizePath.setAttribute("stroke-linejoin", "round");
-    minimizePath.setAttribute("d", "M5 12h14");
-    minimizeIcon.appendChild(minimizePath);
+    const MinimizePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    MinimizePath.setAttribute("stroke-linecap", "round");
+    MinimizePath.setAttribute("stroke-linejoin", "round");
+    MinimizePath.setAttribute("d", "M5 12h14");
+    MinimizeIcon.appendChild(MinimizePath);
 
-    const fullWindowIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    fullWindowIcon.setAttribute("fill", "none");
-    fullWindowIcon.setAttribute("viewBox", "0 0 24 24");
-    fullWindowIcon.setAttribute("stroke-width", "1.3");
-    fullWindowIcon.setAttribute("stroke", "currentColor");
-    fullWindowIcon.classList.add("icon", "makefull-window");
+    const FullWindowIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    FullWindowIcon.setAttribute("fill", "none");
+    FullWindowIcon.setAttribute("viewBox", "0 0 24 24");
+    FullWindowIcon.setAttribute("stroke-width", "1.3");
+    FullWindowIcon.setAttribute("stroke", "currentColor");
+    FullWindowIcon.classList.add("icon", "makefull-window");
 
-    const fullWindowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    fullWindowPath.setAttribute("stroke-linecap", "round");
-    fullWindowPath.setAttribute("stroke-linejoin", "round");
-    fullWindowPath.setAttribute(
+    const FullWindowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    FullWindowPath.setAttribute("stroke-linecap", "round");
+    FullWindowPath.setAttribute("stroke-linejoin", "round");
+    FullWindowPath.setAttribute(
       "d",
       "M16.5 8.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h2.25m8.25-8.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-7.5A2.25 2.25 0 0 1 8.25 18v-1.5m8.25-8.25h-6a2.25 2.25 0 0 0-2.25 2.25v6"
     );
-    fullWindowIcon.appendChild(fullWindowPath);
+    FullWindowIcon.appendChild(FullWindowPath);
 
-    const closeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    closeIcon.setAttribute("fill", "none");
-    closeIcon.setAttribute("viewBox", "0 0 24 24");
-    closeIcon.setAttribute("stroke-width", "1.3");
-    closeIcon.setAttribute("stroke", "currentColor");
-    closeIcon.classList.add("icon", "closeWindow");
+    const CloseIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    CloseIcon.setAttribute("fill", "none");
+    CloseIcon.setAttribute("viewBox", "0 0 24 24");
+    CloseIcon.setAttribute("stroke-width", "1.3");
+    CloseIcon.setAttribute("stroke", "currentColor");
+    CloseIcon.classList.add("icon", "closeWindow");
 
-    const closePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    closePath.setAttribute("stroke-linecap", "round");
-    closePath.setAttribute("stroke-linejoin", "round");
-    closePath.setAttribute("d", "M6 18 18 6M6 6l12 12");
-    closeIcon.appendChild(closePath);
+    const ClosePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    ClosePath.setAttribute("stroke-linecap", "round");
+    ClosePath.setAttribute("stroke-linejoin", "round");
+    ClosePath.setAttribute("d", "M6 18 18 6M6 6l12 12");
+    CloseIcon.appendChild(ClosePath);
 
-    topBar.appendChild(minimizeIcon);
-    topBar.appendChild(fullWindowIcon);
-    topBar.appendChild(closeIcon);
+    TopBar.appendChild(MinimizeIcon);
+    TopBar.appendChild(FullWindowIcon);
+    TopBar.appendChild(CloseIcon);
 
-    const resizeHandle = document.createElement("div");
-    resizeHandle.classList.add("resize-handle", "bottom-right");
+    const ContentSlot = document.createElement("slot");
+    ContentSlot.classList.add("window-content");
 
-    const contentSlot = document.createElement("slot");
-    contentSlot.classList.add("window-content");
+    const ResizeHandles = [
+      "bottom-right",
+      "bottom-left",
+      "top-right",
+      "top-left",
+      "right",
+      "left",
+      "bottom",
+    ];
+    ResizeHandles.forEach((handle) => {
+      const ResizeHandle = document.createElement("div");
+      ResizeHandle.classList.add("resize-handle", handle);
+      Container.appendChild(ResizeHandle);
+    });
 
-    container.appendChild(topBar);
-    container.appendChild(contentSlot); 
-    container.appendChild(resizeHandle);
+    Container.appendChild(TopBar);
+    Container.appendChild(ContentSlot);
 
-    // Attach
-    shadow.appendChild(container);
+    Shadow.appendChild(Container);
 
-    // Apply styles
-    const style = document.createElement("style");
-    style.textContent = `
+    const Style = document.createElement("style");
+    Style.textContent = `
       .windowClass {
-        height: 360px;
-        width: 480px;
+        height: 22.5rem;
+        width: 30rem;
         position: absolute;
-        min-height: 144px;
-        min-width: 192px;
-        border-radius: 10px;
-        backdrop-filter: blur(5px);
+        min-height: 9rem;
+        min-width: 12rem;
+        border-radius: 0.625rem;
+        backdrop-filter: blur(0.3125rem);
         background-color: transparent;
-        border: solid 3px #3f3f3f;
+        border: solid 0.1875rem #3f3f3f;
       }
 
       .topBar {
         width: inherit;
-        min-width: 192px;
-        height: 33px;
+        min-width: 12rem;
+        height: 2.0625rem;
         background-color: #3f3f3f;
-        border-top-left-radius: 7px;
-        border-top-right-radius: 7px;
+        border-top-left-radius: 0.4375rem;
+        border-top-right-radius: 0.4375rem;
         display: flex;
         justify-content: right;
       }
 
       .icon {
-        margin: 2px 6px 0 0;
+        margin: 0.125rem 0.375rem 0 0;
         color: rgb(131, 131, 131);
         cursor: pointer;
-        width: 30px;
-        height: 30px;
+        width: 1.875rem;
+        height: 1.875rem;
       }
 
       .icon:hover {
@@ -114,119 +122,252 @@ class CustomWindow extends HTMLElement {
 
       .resize-handle {
         position: absolute;
-        width: 10px;
-        height: 10px;
-        background-color: rgba(0, 0, 0, 0.342);
+        width: 0.625rem;
+        height: 0.625rem;
+        background-color: transparent;
+        visibility: hidden;
+        z-index: 10;
       }
 
       .bottom-right {
         right: 0;
         bottom: 0;
         cursor: nwse-resize;
-        border-bottom-right-radius: 7px;
+        border-bottom-right-radius: 0.4375rem;
+      }
+
+      .bottom-left {
+        left: 0;
+        bottom: 0;
+        cursor: nesw-resize;
+        border-bottom-left-radius: 0.4375rem;
+      }
+
+      .top-right {
+        right: 0;
+        top: 0;
+        cursor: nesw-resize;
+        border-top-right-radius: 0.4375rem;
+      }
+
+      .top-left {
+        left: 0;
+        top: 0;
+        cursor: nwse-resize;
+        border-top-left-radius: 0.4375rem;
+      }
+
+      .right {
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0.625rem;
+        height: calc(100% - 1.25rem);
+        cursor: ew-resize;
+      }
+
+      .left {
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0.625rem;
+        height: calc(100% - 1.25rem);
+        cursor: ew-resize;
+      }
+
+      .bottom {
+        left: 50%;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: calc(100% - 1.25rem);
+        height: 0.625rem;
+        cursor: ns-resize;
+      }
+
+      .windowClass:hover .resize-handle {
+        visibility: visible;
       }
     `;
+    Shadow.appendChild(Style);
 
-    shadow.appendChild(style);
-
-    // Add interaction logic
-    this.initInteractions(container, topBar, resizeHandle);
+    this.initInteractions(Container, TopBar);
   }
 
-  getRandomColor() {
-    let randomColor = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
-    return randomColor;
+  initInteractions(Container, TopBar) {
+    this.IsFullScreen = false;
+    this.SavedSizeAndPosition = null;
+
+    Container.addEventListener("mousedown", () => this.setZ(Container));
+
+    const MinimizeIcon = TopBar.querySelector(".minimize");
+    MinimizeIcon.addEventListener("click", () =>
+      this.toggleMinimize(Container)
+    );
+
+    const FullWindowIcon = TopBar.querySelector(".makefull-window");
+    FullWindowIcon.addEventListener("click", () =>
+      this.toggleFullScreen(Container)
+    );
+
+    const CloseIcon = TopBar.querySelector(".closeWindow");
+    CloseIcon.addEventListener("click", () => this.remove());
+
+    TopBar.addEventListener("mousedown", (event) =>
+      this.startDragging(Container, event)
+    );
+
+    const ResizeHandles = Container.querySelectorAll(".resize-handle");
+    ResizeHandles.forEach((handle) => {
+      handle.addEventListener("mousedown", (event) =>
+        this.startResizing(Container, event, handle)
+      );
+    });
+
+    this.Container = Container;
+    this.IsMinimized = false;
   }
 
-  initInteractions(container, topBar, resizeHandle) {
-    let isFullScreen = false;
-    let previousSize = {};
-
-    // Handle window focus
-    container.addEventListener("mousedown", () => this.setZ(container));
-
-    // Minimize
-    const minimizeIcon = topBar.querySelector(".minimize");
-    minimizeIcon.addEventListener("click", () => {
-      container.style.display = "none";
-    });
-
-    // Maximize/Restore
-    const fullWindowIcon = topBar.querySelector(".makefull-window");
-    fullWindowIcon.addEventListener("click", () => {
-      if (!isFullScreen) {
-        previousSize.width = container.style.width;
-        previousSize.height = container.style.height;
-        previousSize.left = container.style.left;
-        previousSize.top = container.style.top;
-
-        container.style.width = window.innerWidth + "px";
-        container.style.height = window.innerHeight + "px";
-        container.style.left = "0px";
-        container.style.top = "0px";
-        isFullScreen = true;
-      } else {
-        container.style.width = previousSize.width;
-        container.style.height = previousSize.height;
-        container.style.left = previousSize.left;
-        container.style.top = previousSize.top;
-        isFullScreen = false;
+  toggleMinimize(Container) {
+    if (!this.IsMinimized) {
+      const Rect = Container.getBoundingClientRect();
+      this.SavedSizeAndPosition = {
+        width: `${Rect.width / 16}rem`,
+        height: `${Rect.height / 16}rem`,
+        left: `${Container.offsetLeft / 16}rem`,
+        top: `${Container.offsetTop / 16}rem`,
+      };
+      Container.style.display = "none";
+      this.IsMinimized = true;
+    } else {
+      Container.style.display = "block";
+      if (this.SavedSizeAndPosition) {
+        Container.style.width = this.SavedSizeAndPosition.width;
+        Container.style.height = this.SavedSizeAndPosition.height;
+        Container.style.left = this.SavedSizeAndPosition.left;
+        Container.style.top = this.SavedSizeAndPosition.top;
       }
-    });
-
-    // Close
-    const closeIcon = topBar.querySelector(".closeWindow");
-    closeIcon.addEventListener("click", () => {
-      container.remove();
-    });
-
-    // Dragging
-    topBar.addEventListener("mousedown", (event) => {
-      const offsetX = event.clientX - container.offsetLeft;
-      const offsetY = event.clientY - container.offsetTop;
-
-      function onMouseMove(e) {
-        container.style.left = e.clientX - offsetX + "px";
-        container.style.top = e.clientY - offsetY + "px";
-      }
-
-      function onMouseUp() {
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-      }
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    });
-
-    // Resizing
-    resizeHandle.addEventListener("mousedown", (event) => {
-      const initialWidth = container.offsetWidth;
-      const initialHeight = container.offsetHeight;
-      const startX = event.clientX;
-      const startY = event.clientY;
-
-      function onMouseMove(e) {
-        container.style.width = initialWidth + (e.clientX - startX) + "px";
-        container.style.height = initialHeight + (e.clientY - startY) + "px";
-      }
-
-      function onMouseUp() {
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-      }
-
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    });
+      this.IsMinimized = false;
+    }
   }
 
-  setZ(targetElement) {
-    const windows = document.querySelectorAll("window-c");
-    windows.forEach((window) => {
-      window.shadowRoot.querySelector(".windowClass").style.zIndex = "0";
+  toggleFullScreen(Container) {
+    if (!this.IsFullScreen) {
+      const Rect = Container.getBoundingClientRect();
+      this.SavedSizeAndPosition = {
+        width: `${Rect.width / 16}rem`,
+        height: `${Rect.height / 16}rem`,
+        left: `${Container.offsetLeft / 16}rem`,
+        top: `${Container.offsetTop / 16}rem`,
+      };
+
+      Container.style.width = `${window.innerWidth / 16}rem`;
+      Container.style.height = `${window.innerHeight / 16}rem`;
+      Container.style.left = "0rem";
+      Container.style.top = "0rem";
+      this.IsFullScreen = true;
+    } else if (this.IsFullScreen) {
+      Container.style.width = this.SavedSizeAndPosition.width;
+      Container.style.height = this.SavedSizeAndPosition.height;
+      Container.style.left = this.SavedSizeAndPosition.left;
+      Container.style.top = this.SavedSizeAndPosition.top;
+      Container.getBoundingClientRect();
+
+      this.IsFullScreen = false;
+      setTimeout(() => {}, 100);
+    }
+  }
+
+  startDragging(Container, event) {
+    if (this.IsFullScreen) {
+      const OffsetX = event.clientX - window.innerWidth / 2;
+      const OffsetY = event.clientY - 15;
+
+      Container.style.left = `${(event.clientX - OffsetX) / 16}rem`;
+      Container.style.top = `${(event.clientY - OffsetY) / 16}rem`;
+      this.toggleFullScreen(Container);
+    }
+
+    const OffsetX = event.clientX - Container.offsetLeft;
+    const OffsetY = event.clientY - Container.offsetTop;
+
+    function onMouseMove(e) {
+      Container.style.left = `${(e.clientX - OffsetX) / 16}rem`;
+      Container.style.top = `${(e.clientY - OffsetY) / 16}rem`;
+    }
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+
+  startResizing(Container, event, handle) {
+    const InitialWidth = Container.offsetWidth;
+    const InitialHeight = Container.offsetHeight;
+    const InitialLeft = Container.offsetLeft;
+    const InitialTop = Container.offsetTop;
+    const StartX = event.clientX;
+    const StartY = event.clientY;
+
+    function onMouseMove(e) {
+      let NewWidth = InitialWidth;
+      let NewHeight = InitialHeight;
+      let NewLeft = InitialLeft;
+      let NewTop = InitialTop;
+
+      if (handle.classList.contains("bottom-right")) {
+        NewWidth = InitialWidth + (e.clientX - StartX);
+        NewHeight = InitialHeight + (e.clientY - StartY);
+      } else if (handle.classList.contains("bottom-left")) {
+        NewWidth = InitialWidth - (e.clientX - StartX);
+        NewHeight = InitialHeight + (e.clientY - StartY);
+        NewLeft = InitialLeft + (e.clientX - StartX);
+      } else if (handle.classList.contains("top-right")) {
+        NewWidth = InitialWidth + (e.clientX - StartX);
+        NewHeight = InitialHeight - (e.clientY - StartY);
+        NewTop = InitialTop + (e.clientY - StartY);
+      } else if (handle.classList.contains("top-left")) {
+        NewWidth = InitialWidth - (e.clientX - StartX);
+        NewHeight = InitialHeight - (e.clientY - StartY);
+        NewLeft = InitialLeft + (e.clientX - StartX);
+        NewTop = InitialTop + (e.clientY - StartY);
+      } else if (handle.classList.contains("right")) {
+        NewWidth = InitialWidth + (e.clientX - StartX);
+      } else if (handle.classList.contains("left")) {
+        NewWidth = InitialWidth - (e.clientX - StartX);
+        NewLeft = InitialLeft + (e.clientX - StartX);
+      } else if (handle.classList.contains("bottom")) {
+        NewHeight = InitialHeight + (e.clientY - StartY);
+      }
+
+      if (NewWidth >= 12) {
+        Container.style.width = `${NewWidth / 16}rem`;
+        Container.style.left = `${NewLeft / 16}rem`;
+      }
+      if (NewHeight >= 9) {
+        Container.style.height = `${NewHeight / 16}rem`;
+        Container.style.top = `${NewTop / 16}rem`;
+      }
+    }
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+
+  setZ(TargetElement) {
+    const Windows = document.querySelectorAll("window-c");
+    Windows.forEach((Window) => {
+      Window.shadowRoot.querySelector(".windowClass").style.zIndex = "0";
     });
-    targetElement.style.zIndex = "1";
+    TargetElement.style.zIndex = "1";
   }
 }
 
