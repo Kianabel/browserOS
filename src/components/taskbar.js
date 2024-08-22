@@ -105,6 +105,7 @@ class Taskbar extends HTMLElement {
       }
 
       .app-icon {
+        width: 85%;
         display: flex;
         align-items: center;
         padding: 0.5rem 1rem;

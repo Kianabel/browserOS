@@ -45,10 +45,12 @@ class AppSettings extends HTMLElement {
     const Style = document.createElement('style');
     Style.textContent = `
       .settings-container {
-        height: 90%;
+        height: calc(100% - 2.0625rem);
         width: 100%;
         font-family: Arial, sans-serif;
-        background-color: white;
+        background-color: inherit;
+        z-Index: 0;
+        border-radius: 0.325rem;
       }
 
       label {
@@ -64,7 +66,7 @@ class AppSettings extends HTMLElement {
         margin-left: 0.5rem;
       }
 
-      body.dark-mode {
+      .body.dark-mode {
         background-color: #121212;
         color: #ffffff;
       }

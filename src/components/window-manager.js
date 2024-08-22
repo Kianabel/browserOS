@@ -82,30 +82,25 @@ class CustomWindow extends HTMLElement {
     const Style = document.createElement("style");
     Style.textContent = `
       .windowClass {
-        height: 22.5rem;
-        width: 30rem;
         position: absolute;
         min-height: 9rem;
         min-width: 12rem;
-        border-radius: 0.625rem;
-        backdrop-filter: blur(0.3125rem);
-        background-color: transparent;
-        border: solid 0.1875rem #3f3f3f;
+        border-radius: 0.4375rem;
+        background-color: white;
+        border: solid 0.3rem #3f3f3f;
+        overflow: hidden;
       }
 
       .topBar {
-        width: inherit;
         min-width: 12rem;
         height: 2.0625rem;
         background-color: #3f3f3f;
-        border-top-left-radius: 0.4375rem;
-        border-top-right-radius: 0.4375rem;
         display: flex;
         justify-content: right;
       }
 
       .icon {
-        margin: 0.125rem 0.375rem 0 0;
+        padding: 2px;
         color: rgb(131, 131, 131);
         cursor: pointer;
         width: 1.875rem;
@@ -118,6 +113,10 @@ class CustomWindow extends HTMLElement {
 
       .icon:active {
         color: rgb(141, 141, 141);
+      }
+
+      .closeWindow:hover {
+        color: rgb(210, 4, 45);
       }
 
       .resize-handle {
@@ -365,9 +364,9 @@ class CustomWindow extends HTMLElement {
   setZ(TargetElement) {
     const Windows = document.querySelectorAll("window-c");
     Windows.forEach((Window) => {
-      Window.shadowRoot.querySelector(".windowClass").style.zIndex = "0";
+      Window.shadowRoot.querySelector(".windowClass").style.zIndex = "5";
     });
-    TargetElement.style.zIndex = "1";
+    TargetElement.style.zIndex = "6";
   }
 }
 
