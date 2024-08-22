@@ -152,7 +152,7 @@ class Taskbar extends HTMLElement {
     this.updateTaskbar(Container);
 
     const Observer = new MutationObserver(() => this.updateTaskbar(Container));
-    Observer.observe(document.body, { childList: true, subtree: true });
+    Observer.observe(this.parentNode, { childList: true, subtree: true });
 
     const AddButton = document.createElement("div");
     AddButton.classList.add("add-button");
@@ -179,9 +179,11 @@ class Taskbar extends HTMLElement {
   }
 
   updateTaskbar(Container) {
-    Container.querySelectorAll(".window-square").forEach((square) => square.remove());
+    Container.querySelectorAll(".window-square").forEach((square) =>
+      square.remove()
+    );
 
-    const Windows = document.querySelectorAll("window-c");
+    const Windows = this.parentNode.querySelectorAll("window-c");
 
     Windows.forEach((Window) => {
       const AppIcon = Window.querySelector("img").src;
@@ -198,7 +200,10 @@ class Taskbar extends HTMLElement {
         CustomWindow.toggleMinimize(CustomWindow.Container);
       });
 
-      Container.insertBefore(WindowSquare, Container.querySelector(".add-button"));
+      Container.insertBefore(
+        WindowSquare,
+        Container.querySelector(".add-button")
+      );
     });
   }
 
@@ -220,6 +225,8 @@ class Taskbar extends HTMLElement {
         const NewWindow = document.createElement("window-c");
 
         const AppComponent = document.createElement(app.componentTag);
+        AppComponent.style.width = "100px";
+        AppComponent.style.height = "100px";
         NewWindow.appendChild(AppComponent);
 
         const WindowIcon = document.createElement("img");
@@ -228,7 +235,7 @@ class Taskbar extends HTMLElement {
 
         NewWindow.appendChild(WindowIcon);
 
-        document.body.appendChild(NewWindow);
+        this.parentNode.appendChild(NewWindow); // Append the new window-c element to the same level as the taskbar
 
         this.updateTaskbar(this.Container); // Update the taskbar with the new window
         this.SecondaryTaskbar.style.display = "none";

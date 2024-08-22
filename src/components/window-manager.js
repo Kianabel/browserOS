@@ -86,7 +86,7 @@ class CustomWindow extends HTMLElement {
         min-height: 9rem;
         min-width: 12rem;
         border-radius: 0.4375rem;
-        background-color: white;
+        background-color: #3f3f3f;
         border: solid 0.3rem #3f3f3f;
         overflow: hidden;
       }

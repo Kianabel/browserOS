@@ -45,10 +45,8 @@ class AppSettings extends HTMLElement {
     const Style = document.createElement('style');
     Style.textContent = `
       .settings-container {
-        height: calc(100% - 2.0625rem);
-        width: 100%;
         font-family: Arial, sans-serif;
-        background-color: inherit;
+        background-color: white;
         z-Index: 0;
         border-radius: 0.325rem;
       }
