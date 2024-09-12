@@ -6,8 +6,9 @@ import "./components/desktop.js";
 // Import applications
 import * as AppSettings from "./applications/app-settings.js";
 import * as RandomSlideshow from "./applications/app-slideshow.js";
+import * as Run3 from "./applications/app-run3.js";
 
-export const availableApplications = [AppSettings, RandomSlideshow];
+export const availableApplications = [AppSettings, RandomSlideshow, Run3];
 
 class BrowserOS extends HTMLElement {
   constructor() {
