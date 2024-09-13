@@ -25,8 +25,8 @@ class AppRun3 extends HTMLElement {
     iframe.setAttribute('allow', 'web-share; clipboard-read; clipboard-write');
 
     // Set the container size as needed
-    container.style.width = `600px`;
-    container.style.height = `400px`;
+    //container.style.width = `600px`;
+    //container.style.height = `400px`;
 
     // Add iframe to container
     container.appendChild(iframe);
@@ -35,8 +35,8 @@ class AppRun3 extends HTMLElement {
     style.textContent = `
       .iframe-container {
         position: relative;
-        width: 600px;
-        height: 400px;
+        width: 100%;
+        height: 100%;
         margin: auto;
         font-family: Arial, sans-serif;
       }
