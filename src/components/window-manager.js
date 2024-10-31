@@ -86,7 +86,8 @@ class CustomWindow extends HTMLElement {
         min-height: 9rem;
         min-width: 12rem;
         border-radius: 0.4375rem;
-        background-color: #3f3f3f;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(20px);
         border: solid 0.15rem #3f3f3f;
         overflow: hidden;
       }
@@ -362,11 +363,23 @@ class CustomWindow extends HTMLElement {
   }
 
   setZ(TargetElement) {
+    // Keep a global count to track the highest z-index
+    if (!window.maxZIndex) {
+      window.maxZIndex = 6; // Initialize the max z-index to a reasonable default
+    }
+
+    // Update the clicked window's z-index to the highest + 1
+    window.maxZIndex += 1;
+    TargetElement.style.zIndex = window.maxZIndex;
+
+    // Ensure other windows are set to a lower value if necessary
     const Windows = document.querySelectorAll("window-c");
     Windows.forEach((Window) => {
-      Window.shadowRoot.querySelector(".windowClass").style.zIndex = "5";
+      const WindowContainer = Window.shadowRoot.querySelector(".windowClass");
+      if (WindowContainer !== TargetElement) {
+        WindowContainer.style.zIndex = "5"; // Reset others to base z-index
+      }
     });
-    TargetElement.style.zIndex = "6";
   }
 }
 

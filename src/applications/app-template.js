@@ -1,5 +1,5 @@
 export const name = "TemplateComponent";
-export const iconSrc = "/public/template-icon.jpg";
+export const iconSrc = "/public/bg.jpg";
 export const componentTag = "app-template-component";
 
 class TemplateComponent extends HTMLElement {
@@ -9,11 +9,11 @@ class TemplateComponent extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' });
 
     const container = document.createElement('div');
-    container.classList.add('iframe-container');
+    container.classList.add('main-container');
 
     const style = document.createElement('style');
     style.textContent = `
-      .iframe-container {
+      .main-container {
         position: relative;
         width: 100%;
         height: 100%;
