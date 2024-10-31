@@ -87,7 +87,7 @@ class CustomWindow extends HTMLElement {
         min-width: 12rem;
         border-radius: 0.4375rem;
         background-color: #3f3f3f;
-        border: solid 0.3rem #3f3f3f;
+        border: solid 0.15rem #3f3f3f;
         overflow: hidden;
       }
 
@@ -101,7 +101,7 @@ class CustomWindow extends HTMLElement {
 
       .icon {
         padding: 2px;
-        color: rgb(131, 131, 131);
+        color: white;
         cursor: pointer;
         width: 1.875rem;
         height: 1.875rem;
@@ -116,7 +116,7 @@ class CustomWindow extends HTMLElement {
       }
 
       .closeWindow:hover {
-        color: rgb(210, 4, 45);
+        color: rgb(165, 42, 42);
       }
 
       .resize-handle {
