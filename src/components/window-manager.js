@@ -3,7 +3,7 @@ class CustomWindow extends HTMLElement {
     super();
 
     const Shadow = this.attachShadow({ mode: "open" });
-
+    
     const Container = document.createElement("div");
     Container.classList.add("windowClass");
 
@@ -89,7 +89,7 @@ class CustomWindow extends HTMLElement {
         background-color: rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(20px);
         border: solid 0.15rem #3f3f3f;
-        overflow: hidden;
+        overflow: hidden
       }
 
       .topBar {
@@ -196,7 +196,6 @@ class CustomWindow extends HTMLElement {
   initInteractions(Container, TopBar) {
     this.IsFullScreen = false;
     this.SavedSizeAndPosition = null;
-
     Container.addEventListener("mousedown", () => this.setZ(Container));
 
     const MinimizeIcon = TopBar.querySelector(".minimize");
@@ -265,15 +264,14 @@ class CustomWindow extends HTMLElement {
       Container.style.left = "0rem";
       Container.style.top = "0rem";
       this.IsFullScreen = true;
-    } else if (this.IsFullScreen) {
+      this.setAttribute("fullscreen", "true");
+    } else {
       Container.style.width = this.SavedSizeAndPosition.width;
       Container.style.height = this.SavedSizeAndPosition.height;
       Container.style.left = this.SavedSizeAndPosition.left;
       Container.style.top = this.SavedSizeAndPosition.top;
-      Container.getBoundingClientRect();
-
       this.IsFullScreen = false;
-      setTimeout(() => {}, 100);
+      this.setAttribute("fullscreen", "false");
     }
   }
 

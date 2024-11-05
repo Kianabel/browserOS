@@ -8,8 +8,9 @@ import * as AppSettings from "./applications/app-settings.js";
 import * as RandomSlideshow from "./applications/app-slideshow.js";
 import * as Run3 from "./applications/app-run3.js";
 import * as ImageViewer from "./applications/app-imageviewer.js"
+import * as base64 from "./applications/app-base64.js"
 
-export const availableApplications = [AppSettings, RandomSlideshow, Run3, ImageViewer];
+export const availableApplications = [AppSettings, RandomSlideshow, Run3, ImageViewer, base64];
 
 class BrowserOS extends HTMLElement {
   constructor() {
