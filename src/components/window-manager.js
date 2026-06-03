@@ -6,6 +6,14 @@ class CustomWindow extends HTMLElement {
     
     const Container = document.createElement("div");
     Container.classList.add("windowClass");
+    const Scale = document.documentElement.dataset.browserosWindowScale || "comfortable";
+    const Defaults = {
+      compact: { width: "44rem", height: "30rem" },
+      comfortable: { width: "50rem", height: "34rem" },
+      large: { width: "58rem", height: "38rem" },
+    };
+    Container.style.width = this.getAttribute("window-width") || Defaults[Scale]?.width || Defaults.comfortable.width;
+    Container.style.height = this.getAttribute("window-height") || Defaults[Scale]?.height || Defaults.comfortable.height;
 
     const TopBar = document.createElement("div");
     TopBar.classList.add("topBar");
@@ -16,6 +24,9 @@ class CustomWindow extends HTMLElement {
     MinimizeIcon.setAttribute("stroke-width", "1.3");
     MinimizeIcon.setAttribute("stroke", "currentColor");
     MinimizeIcon.classList.add("icon", "minimize");
+    MinimizeIcon.setAttribute("role", "button");
+    MinimizeIcon.setAttribute("aria-label", "Minimize window");
+    MinimizeIcon.setAttribute("tabindex", "0");
 
     const MinimizePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     MinimizePath.setAttribute("stroke-linecap", "round");
@@ -29,6 +40,9 @@ class CustomWindow extends HTMLElement {
     FullWindowIcon.setAttribute("stroke-width", "1.3");
     FullWindowIcon.setAttribute("stroke", "currentColor");
     FullWindowIcon.classList.add("icon", "makefull-window");
+    FullWindowIcon.setAttribute("role", "button");
+    FullWindowIcon.setAttribute("aria-label", "Toggle fullscreen");
+    FullWindowIcon.setAttribute("tabindex", "0");
 
     const FullWindowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     FullWindowPath.setAttribute("stroke-linecap", "round");
@@ -45,6 +59,9 @@ class CustomWindow extends HTMLElement {
     CloseIcon.setAttribute("stroke-width", "1.3");
     CloseIcon.setAttribute("stroke", "currentColor");
     CloseIcon.classList.add("icon", "closeWindow");
+    CloseIcon.setAttribute("role", "button");
+    CloseIcon.setAttribute("aria-label", "Close window");
+    CloseIcon.setAttribute("tabindex", "0");
 
     const ClosePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     ClosePath.setAttribute("stroke-linecap", "round");
@@ -85,35 +102,57 @@ class CustomWindow extends HTMLElement {
         position: absolute;
         min-height: 9rem;
         min-width: 12rem;
-        border-radius: 0.4375rem;
-        background-color: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(20px);
-        border: solid 0.15rem #3f3f3f;
-        overflow: hidden
+        max-width: calc(100vw - 2rem);
+        max-height: calc(100vh - 6.5rem);
+        border-radius: 0.75rem;
+        background-color: rgba(245, 247, 250, 0.94);
+        backdrop-filter: blur(18px);
+        border: solid 0.0625rem rgba(255, 255, 255, 0.58);
+        box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.32);
+        color: #111827;
+        overflow: hidden;
+      }
+
+      :host([fullscreen="true"]) .windowClass {
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
       }
 
       .topBar {
         min-width: 12rem;
-        height: 2.0625rem;
-        background-color: #3f3f3f;
+        height: 2.5rem;
+        background: rgba(18, 24, 32, 0.92);
         display: flex;
-        justify-content: right;
+        justify-content: flex-end;
+        align-items: center;
+        cursor: grab;
+        padding: 0 0.35rem;
+        box-sizing: border-box;
       }
 
       .icon {
         padding: 2px;
         color: white;
         cursor: pointer;
-        width: 1.875rem;
-        height: 1.875rem;
+        width: 1.65rem;
+        height: 1.65rem;
+        margin-left: 0.15rem;
+        border-radius: 0.375rem;
       }
 
       .icon:hover {
-        transform: scale(1.1);
+        background: rgba(255, 255, 255, 0.12);
+        transform: none;
       }
 
       .icon:active {
         color: rgb(141, 141, 141);
+      }
+
+      .icon:focus-visible {
+        outline: 0.125rem solid rgba(255, 255, 255, 0.85);
+        outline-offset: -0.25rem;
       }
 
       .closeWindow:hover {
@@ -133,28 +172,28 @@ class CustomWindow extends HTMLElement {
         right: 0;
         bottom: 0;
         cursor: nwse-resize;
-        border-bottom-right-radius: 0.4375rem;
+        border-bottom-right-radius: 0.75rem;
       }
 
       .bottom-left {
         left: 0;
         bottom: 0;
         cursor: nesw-resize;
-        border-bottom-left-radius: 0.4375rem;
+        border-bottom-left-radius: 0.75rem;
       }
 
       .top-right {
         right: 0;
         top: 0;
         cursor: nesw-resize;
-        border-top-right-radius: 0.4375rem;
+        border-top-right-radius: 0.75rem;
       }
 
       .top-left {
         left: 0;
         top: 0;
         cursor: nwse-resize;
-        border-top-left-radius: 0.4375rem;
+        border-top-left-radius: 0.75rem;
       }
 
       .right {
@@ -184,6 +223,12 @@ class CustomWindow extends HTMLElement {
         cursor: ns-resize;
       }
 
+      .window-content {
+        display: block;
+        height: calc(100% - 2.5rem);
+        overflow: hidden;
+      }
+
       .windowClass:hover .resize-handle {
         visibility: visible;
       }
@@ -199,17 +244,16 @@ class CustomWindow extends HTMLElement {
     Container.addEventListener("mousedown", () => this.setZ(Container));
 
     const MinimizeIcon = TopBar.querySelector(".minimize");
-    MinimizeIcon.addEventListener("click", () =>
-      this.toggleMinimize(Container)
-    );
+    MinimizeIcon.addEventListener("click", () => this.toggleMinimize(Container));
+    MinimizeIcon.addEventListener("keydown", (event) => this.runButtonAction(event, () => this.toggleMinimize(Container)));
 
     const FullWindowIcon = TopBar.querySelector(".makefull-window");
-    FullWindowIcon.addEventListener("click", () =>
-      this.toggleFullScreen(Container)
-    );
+    FullWindowIcon.addEventListener("click", () => this.toggleFullScreen(Container));
+    FullWindowIcon.addEventListener("keydown", (event) => this.runButtonAction(event, () => this.toggleFullScreen(Container)));
 
     const CloseIcon = TopBar.querySelector(".closeWindow");
     CloseIcon.addEventListener("click", () => this.remove());
+    CloseIcon.addEventListener("keydown", (event) => this.runButtonAction(event, () => this.remove()));
 
     TopBar.addEventListener("mousedown", (event) =>
       this.startDragging(Container, event)
@@ -224,6 +268,34 @@ class CustomWindow extends HTMLElement {
 
     this.Container = Container;
     this.IsMinimized = false;
+  }
+
+  connectedCallback() {
+    if (this.hasPositioned) return;
+    this.hasPositioned = true;
+    requestAnimationFrame(() => {
+      this.centerWindow();
+      this.setZ(this.Container);
+    });
+  }
+
+  centerWindow() {
+    const Rect = this.Container.getBoundingClientRect();
+    const RootWidth = window.innerWidth;
+    const RootHeight = window.innerHeight;
+    const TaskbarSpace = 5.5 * 16;
+    const CascadeIndex = Number(this.getAttribute("window-index") || 0);
+    const Left = Math.max(16, (RootWidth - Rect.width) / 2 + CascadeIndex * 18);
+    const Top = Math.max(16, (RootHeight - TaskbarSpace - Rect.height) / 2 + CascadeIndex * 18);
+
+    this.Container.style.left = `${Left / 16}rem`;
+    this.Container.style.top = `${Top / 16}rem`;
+  }
+
+  runButtonAction(event, action) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    action();
   }
 
   toggleMinimize(Container) {
@@ -276,6 +348,8 @@ class CustomWindow extends HTMLElement {
   }
 
   startDragging(Container, event) {
+    event.preventDefault();
+
     if (this.IsFullScreen) {
       const OffsetX = event.clientX - window.innerWidth / 2;
       const OffsetY = event.clientY - 15;
@@ -303,6 +377,9 @@ class CustomWindow extends HTMLElement {
   }
 
   startResizing(Container, event, handle) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const InitialWidth = Container.offsetWidth;
     const InitialHeight = Container.offsetHeight;
     const InitialLeft = Container.offsetLeft;
@@ -341,11 +418,11 @@ class CustomWindow extends HTMLElement {
         NewHeight = InitialHeight + (e.clientY - StartY);
       }
 
-      if (NewWidth >= 12) {
+      if (NewWidth >= 192) {
         Container.style.width = `${NewWidth / 16}rem`;
         Container.style.left = `${NewLeft / 16}rem`;
       }
-      if (NewHeight >= 9) {
+      if (NewHeight >= 144) {
         Container.style.height = `${NewHeight / 16}rem`;
         Container.style.top = `${NewTop / 16}rem`;
       }
@@ -371,7 +448,7 @@ class CustomWindow extends HTMLElement {
     TargetElement.style.zIndex = window.maxZIndex;
 
     // Ensure other windows are set to a lower value if necessary
-    const Windows = document.querySelectorAll("window-c");
+    const Windows = this.getRootNode().querySelectorAll("window-c");
     Windows.forEach((Window) => {
       const WindowContainer = Window.shadowRoot.querySelector(".windowClass");
       if (WindowContainer !== TargetElement) {

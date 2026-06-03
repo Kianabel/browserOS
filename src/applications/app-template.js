@@ -1,6 +1,9 @@
-export const name = "TemplateComponent";
-export const iconSrc = "/public/bg.jpg";
+export const name = "Template";
+export const iconLabel = "Tp";
+export const iconColor = "#475569";
 export const componentTag = "app-template-component";
+export const tag = "Template";
+export const favorite = false;
 
 class TemplateComponent extends HTMLElement {
   constructor() {

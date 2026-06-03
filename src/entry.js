@@ -5,12 +5,14 @@ import "./components/desktop.js";
 
 // Import applications
 import * as AppSettings from "./applications/app-settings.js";
-import * as RandomSlideshow from "./applications/app-slideshow.js";
 import * as Run3 from "./applications/app-run3.js";
 import * as ImageViewer from "./applications/app-imageviewer.js"
 import * as base64 from "./applications/app-base64.js"
+import * as BrowserApp from "./applications/app-browser.js";
+import * as FileBrowser from "./applications/app-filebrowser.js";
+import * as Notepad from "./applications/app-notepad.js";
 
-export const availableApplications = [AppSettings, RandomSlideshow, Run3, ImageViewer, base64];
+export const availableApplications = [FileBrowser, Notepad, BrowserApp, AppSettings, Run3, ImageViewer, base64];
 
 class BrowserOS extends HTMLElement {
   constructor() {
@@ -35,16 +37,19 @@ class BrowserOS extends HTMLElement {
         height: 100%;
         overflow: hidden;
         margin: 0;
-  background-color: white;
-  overflow: hidden;
-  background-image: url(../public/bg.jpg);
-  background-repeat: no-repeat;
-  background-size: cover;
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* IE10+/Edge */
-  user-select: none; /* Standard */
-  scrollbar-color: white transparent;
+        background-color: #131820;
+        background-image:
+          radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.18), transparent 23rem),
+          linear-gradient(rgba(14, 18, 25, var(--browseros-wallpaper-dim, 0.42)), rgba(14, 18, 25, var(--browseros-wallpaper-dim, 0.42))),
+          var(--browseros-wallpaper, url(../public/bg.jpg));
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        scrollbar-color: white transparent;
       }
     `;
 
@@ -52,7 +57,9 @@ class BrowserOS extends HTMLElement {
     shadow.appendChild(osContainer);
   }
 
-  connectedCallback() {}
+  connectedCallback() {
+    AppSettings.applySettings();
+  }
 }
 
 customElements.define("browser-os", BrowserOS);

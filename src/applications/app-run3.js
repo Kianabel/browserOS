@@ -1,6 +1,9 @@
-export const name = "Run3";
-export const iconSrc = "/public/bg.jpg";
+export const name = "Run 3";
+export const iconLabel = "R3";
+export const iconColor = "#dc2626";
 export const componentTag = "app-run3";
+export const tag = "Gaming";
+export const favorite = true;
 
 class AppRun3 extends HTMLElement {
   constructor() {
@@ -16,12 +19,7 @@ class AppRun3 extends HTMLElement {
     iframe.classList.add('frame');
     iframe.setAttribute('id', 'html5game');
     iframe.setAttribute('src', 'https://lekug.github.io/tn6pS9dCf37xAhkJv/');
-    iframe.setAttribute('scrolling', 'no');
-    iframe.setAttribute('marginwidth', '0');
-    iframe.setAttribute('vspace', '0');
-    iframe.setAttribute('frameborder', '0');
-    iframe.setAttribute('hspace', '0');
-    iframe.setAttribute('marginheight', '0');
+    iframe.setAttribute('title', 'Run 3 game');
     iframe.setAttribute('allow', 'web-share; clipboard-read; clipboard-write');
 
     // Set the container size as needed
@@ -45,6 +43,7 @@ class AppRun3 extends HTMLElement {
         width: 100%;
         height: 100%;
         display: block;
+        border: 0;
       }
     `;
 

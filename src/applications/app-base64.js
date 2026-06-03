@@ -1,7 +1,10 @@
-export const name = "Base64ConverterComponent";
-export const iconSrc = "/public/bg.jpg";
+export const name = "Base64";
+export const iconLabel = "64";
+export const iconColor = "#2563eb";
 export const componentTag = "app-base64-converter-component";
-import "../components/base64.js";
+export const tag = "Utilities";
+export const favorite = false;
+import { decode64, encode64 } from "../components/base64.js";
 
 class Base64ConverterComponent extends HTMLElement {
   constructor() {
@@ -52,30 +55,32 @@ class Base64ConverterComponent extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       .scroll-container {
-        max-height: 100%;
-        overflow: auto; /* Enable scrolling */
-        padding: 10px;
+        height: 100%;
+        overflow: auto;
+        padding: 1rem;
         box-sizing: border-box;
+        background: #eef2f7;
       }
       .main-container {
-        padding: 20px;
-        background: #f9f9f9;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        font-family: Arial, sans-serif;
-        overflow: hidden;
+        display: grid;
+        gap: 1rem;
+        max-width: 48rem;
+        margin: 0 auto;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
       .header {
-        text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 0.25rem;
       }
       h2 {
-        font-size: 1.8em;
+        font-size: 1.35rem;
+        line-height: 1.2;
         margin: 0;
+        color: #111827;
       }
       p {
-        font-size: 1em;
-        color: #555;
+        font-size: 0.92rem;
+        color: #64748b;
+        margin: 0.35rem 0 0;
       }
       label {
         font-weight: bold;
@@ -84,28 +89,29 @@ class Base64ConverterComponent extends HTMLElement {
       }
       textarea, select, button {
         width: 100%;
-        padding: 10px;
+        box-sizing: border-box;
+        padding: 0.7rem;
         margin-top: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 1em;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.45rem;
+        font: 500 0.92rem/1.35 inherit;
       }
       button {
-        background-color: #007BFF;
+        background-color: #2563eb;
         color: white;
         border: none;
         cursor: pointer;
         transition: background-color 0.3s;
       }
       button:hover {
-        background-color: #0056b3;
+        background-color: #1d4ed8;
       }
       .converter, .decoder {
-        padding: 20px;
+        padding: 1rem;
         background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.65rem;
+        box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.08);
       }
       .converter h3, .decoder h3 {
         margin-bottom: 10px;
@@ -129,8 +135,7 @@ class Base64ConverterComponent extends HTMLElement {
       }
 
       try {
-        // Use the encode64 function from base64.js (attached to String prototype)
-        let encodedString = input.encode64(mimeType);
+        let encodedString = encode64(input, mimeType);
         shadow.getElementById('outputField').value = encodedString;
       } catch (error) {
         alert("Unable to encode the input string to Base64.");
@@ -147,8 +152,7 @@ class Base64ConverterComponent extends HTMLElement {
       }
 
       try {
-        // Use the decode64 function from base64.js (attached to String prototype)
-        let decodedString = input.decode64();
+        let decodedString = decode64(input);
         shadow.getElementById('decodeOutputField').value = decodedString;
       } catch (error) {
         alert("Invalid Base64 string or unable to decode.");
