@@ -19,6 +19,7 @@ class AppFileBrowser extends HTMLElement {
     this.selectedIds = new Set();
     this.lastSelectedId = null;
     this.viewMode = "grid";
+    this.sortMode = "name";
     this.clipboard = null;
     this.searchQuery = "";
     this.contextTargetId = null;
@@ -134,15 +135,23 @@ class AppFileBrowser extends HTMLElement {
             <button class="icon-button" data-action="up" ${CurrentFolder.id === FileSystem.ROOT_ID ? "disabled" : ""} aria-label="Up">${this.iconSvg("up")}</button>
             <div class="breadcrumbs">${Path.map((node) => `<button data-folder="${node.id}">${this.escapeHtml(node.name)}</button>`).join("")}</div>
             <input class="search" type="search" placeholder="Search files" value="${this.escapeHtml(this.searchQuery)}" />
+            <select class="sort-select" aria-label="Sort files">
+              <option value="name" ${this.sortMode === "name" ? "selected" : ""}>Name</option>
+              <option value="updated" ${this.sortMode === "updated" ? "selected" : ""}>Modified</option>
+              <option value="type" ${this.sortMode === "type" ? "selected" : ""}>Type</option>
+            </select>
             <button class="icon-button ${this.viewMode === "grid" ? "active" : ""}" data-action="grid" aria-label="Grid view">${this.iconSvg("grid")}</button>
             <button class="icon-button ${this.viewMode === "list" ? "active" : ""}" data-action="list" aria-label="List view">${this.iconSvg("list")}</button>
           </header>
 
           <nav class="actions" aria-label="File actions">
+            <button data-action="open" ${!Selected ? "disabled" : ""}>${this.iconSvg("open")}<span>Open</span></button>
             <button data-action="new-folder">${this.iconSvg("folder-plus")}<span>New folder</span></button>
             <button data-action="new-file">${this.iconSvg("file-plus")}<span>New file</span></button>
             <button data-action="rename" ${!Selected || Selected.id === FileSystem.ROOT_ID ? "disabled" : ""}>${this.iconSvg("edit")}<span>Rename</span></button>
             <button data-action="duplicate" ${SelectedNodes.length === 0 ? "disabled" : ""}>${this.iconSvg("copy")}<span>Duplicate</span></button>
+            <button data-action="paste" ${!this.clipboard ? "disabled" : ""}>${this.iconSvg("paste")}<span>Paste</span></button>
+            <button data-action="undo" ${this.undoStack.length === 0 ? "disabled" : ""}>${this.iconSvg("undo")}<span>Undo</span></button>
             <button data-action="delete" ${SelectedNodes.length === 0 ? "disabled" : ""}>${this.iconSvg("trash")}<span>Delete</span></button>
             <button data-action="export">${this.iconSvg("download")}<span>Export JSON</span></button>
             <button data-action="import">${this.iconSvg("upload")}<span>Import</span></button>
@@ -330,7 +339,8 @@ class AppFileBrowser extends HTMLElement {
         cursor: pointer;
       }
 
-      .search {
+      .search,
+      .sort-select {
         width: min(13rem, 26%);
         min-width: 8rem;
         height: 2rem;
@@ -342,7 +352,14 @@ class AppFileBrowser extends HTMLElement {
         outline: none;
       }
 
-      .search:focus {
+      .sort-select {
+        width: 7.4rem;
+        min-width: 7.4rem;
+        font-weight: 750;
+      }
+
+      .search:focus,
+      .sort-select:focus {
         border-color: rgba(56, 189, 248, 0.75);
       }
 
@@ -528,6 +545,27 @@ class AppFileBrowser extends HTMLElement {
         line-height: 1.45;
       }
 
+      .preview-image {
+        width: 100%;
+        max-height: 11rem;
+        object-fit: contain;
+        border-radius: 0.65rem;
+        background: rgba(0, 0, 0, 0.22);
+        border: 0.0625rem solid rgba(255, 255, 255, 0.1);
+      }
+
+      .preview-text {
+        max-height: 8rem;
+        margin: 0;
+        overflow: auto;
+        padding: 0.65rem;
+        border-radius: 0.65rem;
+        background: rgba(0, 0, 0, 0.22);
+        color: rgba(229, 237, 247, 0.78);
+        white-space: pre-wrap;
+        font: 600 0.72rem/1.45 Consolas, "Courier New", monospace;
+      }
+
       .empty {
         grid-column: 1 / -1;
         min-height: 14rem;
@@ -614,6 +652,10 @@ class AppFileBrowser extends HTMLElement {
         .search {
           min-width: 6rem;
         }
+
+        .sort-select {
+          min-width: 6.6rem;
+        }
       }
     `;
   }
@@ -642,6 +684,10 @@ class AppFileBrowser extends HTMLElement {
       this.searchQuery = event.target.value;
       this.render();
     });
+    Root.querySelector(".sort-select")?.addEventListener("change", (event) => {
+      this.sortMode = event.target.value;
+      this.render();
+    });
 
     Root.querySelector("[data-action='up']")?.addEventListener("click", () => this.navigateUp());
     Root.querySelector("[data-action='grid']")?.addEventListener("click", () => {
@@ -652,10 +698,15 @@ class AppFileBrowser extends HTMLElement {
       this.viewMode = "list";
       this.render();
     });
+    Root.querySelectorAll("[data-action='open']").forEach((button) => button.addEventListener("click", () => {
+      if (this.selectedId) this.openNode(this.selectedId);
+    }));
     Root.querySelectorAll("[data-action='new-folder']").forEach((button) => button.addEventListener("click", () => this.createFolder()));
     Root.querySelectorAll("[data-action='new-file']").forEach((button) => button.addEventListener("click", () => this.createFile()));
     Root.querySelectorAll("[data-action='rename']").forEach((button) => button.addEventListener("click", () => this.renameSelected()));
     Root.querySelectorAll("[data-action='duplicate']").forEach((button) => button.addEventListener("click", () => this.duplicateSelected()));
+    Root.querySelectorAll("[data-action='paste']").forEach((button) => button.addEventListener("click", () => this.pasteClipboard()));
+    Root.querySelectorAll("[data-action='undo']").forEach((button) => button.addEventListener("click", () => this.undoLastMove()));
     Root.querySelectorAll("[data-action='delete']").forEach((button) => button.addEventListener("click", () => this.deleteSelected()));
     Root.querySelectorAll("[data-action='export']").forEach((button) => button.addEventListener("click", () => this.exportJson()));
     Root.querySelectorAll("[data-action='import']").forEach((button) => button.addEventListener("click", () => this.importJson()));
@@ -987,8 +1038,22 @@ class AppFileBrowser extends HTMLElement {
   getVisibleChildren(folderId) {
     const Query = this.searchQuery.trim().toLowerCase();
     const Children = FileSystem.listChildren(folderId);
-    if (!Query) return Children;
-    return Children.filter((child) => child.name.toLowerCase().includes(Query));
+    const Visible = Query
+      ? Children.filter((child) => child.name.toLowerCase().includes(Query))
+      : Children;
+    return this.sortChildren(Visible);
+  }
+
+  sortChildren(children) {
+    return [...children].sort((a, b) => {
+      if (this.sortMode === "updated") return (b.updatedAt || 0) - (a.updatedAt || 0);
+      if (this.sortMode === "type") {
+        const Type = a.type.localeCompare(b.type, undefined, { sensitivity: "base" });
+        if (Type !== 0) return Type;
+      }
+      if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    });
   }
 
   renderFolderTree(folderId, depth) {
@@ -1047,12 +1112,30 @@ class AppFileBrowser extends HTMLElement {
       <h3>${this.escapeHtml(selected.name)}</h3>
       <p class="meta">${this.escapeHtml(selected.type)}<br>${this.escapeHtml(Path)}<br>Updated ${this.formatDate(selected.updatedAt)}</p>
       <div class="details-actions">
+        <button data-action="open">${this.iconSvg("open")}<span>Open</span></button>
         <button data-action="rename">${this.iconSvg("edit")}<span>Rename</span></button>
         <button data-action="duplicate">${this.iconSvg("copy")}<span>Duplicate</span></button>
         <button data-action="delete" ${selected.id === FileSystem.DESKTOP_ID ? "disabled" : ""}>${this.iconSvg("trash")}<span>Delete</span></button>
       </div>
+      ${this.renderPreview(selected)}
       ${selected.type === "file" ? `<textarea class="editor" spellcheck="false">${this.escapeHtml(selected.content || "")}</textarea>` : ""}
     `;
+  }
+
+  renderPreview(selected) {
+    if (selected.type === "folder") {
+      return `<p class="meta">${FileSystem.listChildren(selected.id).length} item(s) inside</p>`;
+    }
+    if (selected.type === "shortcut") {
+      return `<p class="meta">Shortcut to ${this.escapeHtml(selected.target?.componentTag || "application")}</p>`;
+    }
+    const MimeType = String(selected.metadata?.mimeType || "");
+    if (MimeType.startsWith("image/") && selected.content) {
+      return `<img class="preview-image" src="${this.escapeHtml(selected.content)}" alt="${this.escapeHtml(selected.name)} preview" />`;
+    }
+    const Text = String(selected.content || "").trim();
+    if (!Text) return `<p class="meta">Empty text file</p>`;
+    return `<pre class="preview-text">${this.escapeHtml(Text.slice(0, 420))}${Text.length > 420 ? "\n..." : ""}</pre>`;
   }
 
   showContextMenu(event, id) {
@@ -1146,6 +1229,7 @@ class AppFileBrowser extends HTMLElement {
     const Folder = FileSystem.createFolder(parentId, "New folder");
     this.currentFolderId = parentId;
     this.setSelection(Folder ? [Folder.id] : []);
+    if (Folder) this.notify("Folder created", Folder.name, "success");
     this.render();
   }
 
@@ -1153,6 +1237,7 @@ class AppFileBrowser extends HTMLElement {
     const File = FileSystem.createFile(parentId, "New file.txt", "");
     this.currentFolderId = parentId;
     this.setSelection(File ? [File.id] : []);
+    if (File) this.notify("File created", File.name, "success");
     this.render();
   }
 
@@ -1195,6 +1280,7 @@ class AppFileBrowser extends HTMLElement {
     Nodes.forEach((node) => FileSystem.deleteNode(node.id));
     this.clearSelection();
     document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+    this.notify("Deleted", Label, "warning");
     this.render();
   }
 
@@ -1204,11 +1290,12 @@ class AppFileBrowser extends HTMLElement {
     if (!confirm(`Delete "${Node.name}"?`)) return;
     FileSystem.deleteNode(id);
     if (this.currentFolderId === id) this.currentFolderId = FileSystem.DESKTOP_ID;
-    this.selectedIds.delete(id);
-    if (this.selectedId === id) this.selectedId = [...this.selectedIds].at(-1) || null;
-    document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
-    this.render();
-  }
+      this.selectedIds.delete(id);
+      if (this.selectedId === id) this.selectedId = [...this.selectedIds].at(-1) || null;
+      document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+      this.notify("Deleted", Node.name, "warning");
+      this.render();
+    }
 
   moveDraggedNode(nodeId, folderId) {
     this.moveDraggedNodes([nodeId], folderId);
@@ -1242,6 +1329,7 @@ class AppFileBrowser extends HTMLElement {
       this.recordMove({ moves: Moves });
       this.setSelection(MovedIds);
       document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+      this.notify("Moved", `${MovedIds.length} item(s)`, "success");
       this.render();
     }
   }
@@ -1306,6 +1394,7 @@ class AppFileBrowser extends HTMLElement {
       if (Clones.length) {
         this.setSelection(Clones.map((clone) => clone.id));
         document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+        this.notify("Pasted", `${Clones.length} item(s)`, "success");
       }
     }
     this.render();
@@ -1351,6 +1440,7 @@ class AppFileBrowser extends HTMLElement {
     this.currentFolderId = Moves[0].fromParentId;
     this.setSelection(MovedIds);
     document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+    this.notify("Move undone", `${MovedIds.length} item(s) restored`, "success");
     this.render();
   }
 
@@ -1375,6 +1465,7 @@ class AppFileBrowser extends HTMLElement {
     this.currentFolderId = Moves[0].toParentId;
     this.setSelection(MovedIds);
     document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+    this.notify("Move redone", `${MovedIds.length} item(s) moved`, "success");
     this.render();
   }
 
@@ -1393,7 +1484,14 @@ class AppFileBrowser extends HTMLElement {
     }
     this.currentFolderId = FileSystem.DESKTOP_ID;
     this.clearSelection();
+    this.notify("Filesystem imported", "JSON tree loaded", "success");
     this.render();
+  }
+
+  notify(title, message = "", tone = "info") {
+    document.dispatchEvent(new CustomEvent("browseros:notify", {
+      detail: { title, message, tone },
+    }));
   }
 
   formatDate(value) {
@@ -1418,7 +1516,10 @@ class AppFileBrowser extends HTMLElement {
       "folder-plus": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5h7l1.6 2H20a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"></path><path d="M12 12v5M9.5 14.5h5"></path></svg>`,
       grid: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="4" y="14" width="6" height="6" rx="1"></rect><rect x="14" y="14" width="6" height="6" rx="1"></rect></svg>`,
       list: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path></svg>`,
+      open: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l1.8 2H20v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-11Z"></path><path d="m12 14 4-4M13 10h3v3"></path></svg>`,
+      paste: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6l1 2h2v13H6V7h2l1-2Z"></path><path d="M9 5h6M9 12h6M9 16h4"></path></svg>`,
       trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"></path></svg>`,
+      undo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 8H5V4"></path><path d="M5 8h9a5 5 0 1 1-3.5 8.5"></path></svg>`,
       up: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"></path><path d="m6 11 6-6 6 6"></path></svg>`,
       upload: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V10"></path><path d="m8 14 4-4 4 4"></path><path d="M5 4h14"></path></svg>`,
     };

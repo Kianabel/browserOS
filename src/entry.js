@@ -2,6 +2,7 @@
 import "./components/window-manager.js";
 import "./components/taskbar.js";
 import "./components/desktop.js";
+import "./components/notifications.js";
 
 // Import applications
 import * as AppSettings from "./applications/app-settings.js";
@@ -25,9 +26,11 @@ class BrowserOS extends HTMLElement {
 
     const desktop = document.createElement("desktop-c");
     const taskbar = document.createElement("taskbar-c");
+    const notifications = document.createElement("notifications-c");
 
     osContainer.appendChild(desktop);
     osContainer.appendChild(taskbar);
+    osContainer.appendChild(notifications);
 
     const style = document.createElement("style");
     style.textContent = `

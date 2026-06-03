@@ -17,6 +17,12 @@ class AppNotepad extends HTMLElement {
     this.content = "";
     this.fileName = "Untitled.txt";
     this.dirty = false;
+    this.wrap = true;
+    this.autosave = true;
+    this.findOpen = false;
+    this.findQuery = "";
+    this.cursor = { line: 1, column: 1 };
+    this.autosaveTimer = null;
   }
 
   static get observedAttributes() {
@@ -26,6 +32,10 @@ class AppNotepad extends HTMLElement {
   connectedCallback() {
     this.loadFile(this.getAttribute("file-id"));
     this.render();
+  }
+
+  disconnectedCallback() {
+    clearTimeout(this.autosaveTimer);
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -67,12 +77,22 @@ class AppNotepad extends HTMLElement {
             <button type="button" data-action="save">${this.iconSvg("save")}<span>Save</span></button>
             <button type="button" data-action="save-as">${this.iconSvg("save-as")}<span>Save as</span></button>
             <button type="button" data-action="rename" ${!this.fileId ? "disabled" : ""}>${this.iconSvg("edit")}<span>Rename</span></button>
+            <button type="button" data-action="find">${this.iconSvg("search")}<span>Find</span></button>
+            <button type="button" class="${this.wrap ? "active" : ""}" data-action="wrap">${this.iconSvg("wrap")}<span>Wrap</span></button>
+            <button type="button" class="${this.autosave ? "active" : ""}" data-action="autosave">${this.iconSvg("bolt")}<span>Autosave</span></button>
           </div>
         </header>
-        <textarea class="editor" spellcheck="false" placeholder="Start typing...">${this.escapeHtml(this.content)}</textarea>
+        <div class="findbar" ${this.findOpen ? "" : "hidden"}>
+          <input class="find-input" type="search" placeholder="Find text" value="${this.escapeHtml(this.findQuery)}" />
+          <button type="button" data-action="find-prev">${this.iconSvg("up")}<span>Prev</span></button>
+          <button type="button" data-action="find-next">${this.iconSvg("down")}<span>Next</span></button>
+          <button type="button" data-action="close-find" aria-label="Close find">x</button>
+        </div>
+        <textarea class="editor ${this.wrap ? "wrap" : "nowrap"}" spellcheck="false" placeholder="Start typing...">${this.escapeHtml(this.content)}</textarea>
         <footer class="status">
           <span>${this.content.length} chars</span>
           <span>${this.getWordCount()} words</span>
+          <span>Ln ${this.cursor.line}, Col ${this.cursor.column}</span>
           <span>${this.dirty ? "Unsaved changes" : "Saved"}</span>
         </footer>
       </section>
@@ -97,12 +117,13 @@ class AppNotepad extends HTMLElement {
       .notepad {
         height: 100%;
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
         background: #f7f8fb;
       }
 
       .toolbar,
-      .status {
+      .status,
+      .findbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -175,9 +196,41 @@ class AppNotepad extends HTMLElement {
         background: #dce4ef;
       }
 
+      button.active {
+        background: #dcfce7;
+        color: #166534;
+      }
+
       button:disabled {
         opacity: 0.45;
         cursor: default;
+      }
+
+      .findbar {
+        justify-content: flex-start;
+        gap: 0.45rem;
+        padding: 0.55rem 0.9rem;
+        background: #eef4fb;
+      }
+
+      .findbar[hidden] {
+        display: none;
+      }
+
+      .find-input {
+        width: min(18rem, 100%);
+        height: 2.15rem;
+        border: 0.0625rem solid rgba(15, 23, 42, 0.14);
+        border-radius: 0.55rem;
+        padding: 0 0.7rem;
+        background: white;
+        color: #172033;
+        outline: none;
+        font: 750 0.78rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .find-input:focus {
+        border-color: rgba(34, 197, 94, 0.68);
       }
 
       .editor {
@@ -194,6 +247,16 @@ class AppNotepad extends HTMLElement {
         color: #111827;
         font: 500 0.95rem/1.65 Consolas, "Courier New", monospace;
         tab-size: 2;
+      }
+
+      .editor.wrap {
+        white-space: pre-wrap;
+      }
+
+      .editor.nowrap {
+        white-space: pre;
+        overflow-wrap: normal;
+        overflow-x: auto;
       }
 
       .status {
@@ -231,6 +294,16 @@ class AppNotepad extends HTMLElement {
     Editor.addEventListener("input", (event) => {
       this.content = event.target.value;
       this.dirty = true;
+      this.updateCursor(Editor);
+      this.updateStatus();
+      this.queueAutosave();
+    });
+    Editor.addEventListener("keyup", () => {
+      this.updateCursor(Editor);
+      this.updateStatus();
+    });
+    Editor.addEventListener("click", () => {
+      this.updateCursor(Editor);
       this.updateStatus();
     });
     Editor.addEventListener("keydown", (event) => {
@@ -238,12 +311,36 @@ class AppNotepad extends HTMLElement {
         event.preventDefault();
         this.save();
       }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        this.openFind();
+      }
     });
 
     this.shadowRoot.querySelector("[data-action='new']").addEventListener("click", () => this.newDocument());
     this.shadowRoot.querySelector("[data-action='save']").addEventListener("click", () => this.save());
     this.shadowRoot.querySelector("[data-action='save-as']").addEventListener("click", () => this.saveAs());
     this.shadowRoot.querySelector("[data-action='rename']").addEventListener("click", () => this.rename());
+    this.shadowRoot.querySelector("[data-action='find']").addEventListener("click", () => this.openFind());
+    this.shadowRoot.querySelector("[data-action='wrap']").addEventListener("click", () => {
+      this.wrap = !this.wrap;
+      this.render();
+    });
+    this.shadowRoot.querySelector("[data-action='autosave']").addEventListener("click", () => {
+      this.autosave = !this.autosave;
+      if (this.autosave) this.queueAutosave(0);
+      this.render();
+    });
+    this.shadowRoot.querySelector("[data-action='find-next']")?.addEventListener("click", () => this.findNext(1));
+    this.shadowRoot.querySelector("[data-action='find-prev']")?.addEventListener("click", () => this.findNext(-1));
+    this.shadowRoot.querySelector("[data-action='close-find']")?.addEventListener("click", () => {
+      this.findOpen = false;
+      this.render();
+    });
+    this.shadowRoot.querySelector(".find-input")?.addEventListener("input", (event) => {
+      this.findQuery = event.target.value;
+      this.findNext(1, true);
+    });
   }
 
   updateStatus() {
@@ -254,9 +351,49 @@ class AppNotepad extends HTMLElement {
       Status.innerHTML = `
         <span>${this.content.length} chars</span>
         <span>${this.getWordCount()} words</span>
+        <span>Ln ${this.cursor.line}, Col ${this.cursor.column}</span>
         <span>${this.dirty ? "Unsaved changes" : "Saved"}</span>
       `;
     }
+  }
+
+  updateCursor(editor) {
+    const Position = editor.selectionStart || 0;
+    const Lines = editor.value.slice(0, Position).split("\n");
+    this.cursor = {
+      line: Lines.length,
+      column: Lines.at(-1).length + 1,
+    };
+  }
+
+  queueAutosave(delay = 850) {
+    clearTimeout(this.autosaveTimer);
+    if (!this.autosave || !this.fileId || !this.dirty) return;
+    this.autosaveTimer = window.setTimeout(() => this.save(true), delay);
+  }
+
+  openFind() {
+    this.findOpen = true;
+    this.render();
+    this.shadowRoot.querySelector(".find-input")?.focus();
+  }
+
+  findNext(direction = 1, fromStart = false) {
+    if (!this.findQuery) return;
+    const Editor = this.shadowRoot.querySelector(".editor");
+    if (!Editor) return;
+    const Content = Editor.value.toLowerCase();
+    const Query = this.findQuery.toLowerCase();
+    const Start = fromStart
+      ? 0
+      : Math.max(0, Editor.selectionStart + (direction > 0 ? 1 : -1));
+    let Index = direction > 0 ? Content.indexOf(Query, Start) : Content.lastIndexOf(Query, Start);
+    if (Index < 0) Index = direction > 0 ? Content.indexOf(Query, 0) : Content.lastIndexOf(Query);
+    if (Index < 0) return;
+    Editor.focus();
+    Editor.setSelectionRange(Index, Index + this.findQuery.length);
+    this.updateCursor(Editor);
+    this.updateStatus();
   }
 
   newDocument() {
@@ -268,7 +405,7 @@ class AppNotepad extends HTMLElement {
     this.render();
   }
 
-  save() {
+  save(silent = false) {
     if (!this.fileId) {
       this.saveAs();
       return;
@@ -277,6 +414,11 @@ class AppNotepad extends HTMLElement {
     this.dirty = false;
     this.updateStatus();
     document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+    if (!silent) {
+      document.dispatchEvent(new CustomEvent("browseros:notify", {
+        detail: { title: "Notepad", message: `${this.fileName} saved`, tone: "success" },
+      }));
+    }
   }
 
   saveAs() {
@@ -289,6 +431,9 @@ class AppNotepad extends HTMLElement {
     this.dirty = false;
     this.render();
     document.dispatchEvent(new CustomEvent("browseros:filesystem-changed"));
+    document.dispatchEvent(new CustomEvent("browseros:notify", {
+      detail: { title: "Notepad", message: `${this.fileName} created`, tone: "success" },
+    }));
   }
 
   rename() {
@@ -315,6 +460,11 @@ class AppNotepad extends HTMLElement {
     const Icons = {
       edit: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.5 4 4-.5L18.8 8.7l-3.5-3.5L4 16.5Z"></path><path d="m14 6.5 3.5 3.5"></path></svg>`,
       file: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 6 20V5A1.5 1.5 0 0 1 7.5 3.5Z"></path><path d="M13 3.5V8h4M9 13h6M9 16h6"></path></svg>`,
+      search: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="m15 15 4 4"></path></svg>`,
+      wrap: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11a4 4 0 0 1 0 8H9"></path><path d="m12 11-3 4 3 4M4 11h5"></path></svg>`,
+      bolt: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 12h6l-1 8 8-12h-6l1-8Z"></path></svg>`,
+      up: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 14 5-5 5 5"></path></svg>`,
+      down: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>`,
       new: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h6l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 6 20V5A1.5 1.5 0 0 1 7.5 3.5Z"></path><path d="M13 3.5V8h4M12 12v6M9 15h6"></path></svg>`,
       save: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z"></path><path d="M8 4v6h8V4M8 20v-6h8v6"></path></svg>`,
       "save-as": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5V4Z"></path><path d="M8 4v6h8V4M8 20v-5h5"></path><path d="m14 16 4 4M18 16l-4 4"></path></svg>`,

@@ -1,3 +1,5 @@
+import { FileSystem } from "./filesystem.js";
+
 class Taskbar extends HTMLElement {
   constructor() {
     super();
@@ -15,6 +17,10 @@ class Taskbar extends HTMLElement {
     ContextMenu.classList.add("context-menu");
     ContextMenu.hidden = true;
 
+    const CommandPalette = document.createElement("div");
+    CommandPalette.classList.add("command-palette");
+    CommandPalette.hidden = true;
+
     const RevealZone = document.createElement("div");
     RevealZone.classList.add("fullscreen-reveal-zone");
 
@@ -22,6 +28,7 @@ class Taskbar extends HTMLElement {
     Shadow.appendChild(Container);
     Shadow.appendChild(Launcher);
     Shadow.appendChild(ContextMenu);
+    Shadow.appendChild(CommandPalette);
 
     const Style = document.createElement("style");
     Style.textContent = `
@@ -336,6 +343,104 @@ class Taskbar extends HTMLElement {
         backdrop-filter: blur(20px);
       }
 
+      .command-palette {
+        position: fixed;
+        z-index: 1600;
+        top: 4rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(40rem, calc(100% - 2rem));
+        border-radius: 1rem;
+        border: 0.0625rem solid rgba(255, 255, 255, 0.26);
+        background: rgba(16, 22, 30, 0.96);
+        color: white;
+        box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(28px);
+        overflow: hidden;
+      }
+
+      .command-palette[hidden] {
+        display: none;
+      }
+
+      .command-search {
+        width: 100%;
+        height: 3.4rem;
+        border: 0;
+        border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.12);
+        padding: 0 1rem;
+        background: rgba(255, 255, 255, 0.04);
+        color: white;
+        outline: none;
+        font: 800 1rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .command-search::placeholder {
+        color: rgba(255, 255, 255, 0.42);
+      }
+
+      .command-results {
+        max-height: min(29rem, calc(100vh - 9rem));
+        overflow: auto;
+        padding: 0.55rem;
+      }
+
+      .command-group-title {
+        margin: 0.45rem 0.45rem 0.35rem;
+        color: rgba(255, 255, 255, 0.5);
+        font: 850 0.7rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
+        text-transform: uppercase;
+      }
+
+      .command-result {
+        width: 100%;
+        min-height: 3rem;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.65rem;
+        border: 0;
+        border-radius: 0.7rem;
+        padding: 0.5rem 0.65rem;
+        background: transparent;
+        color: white;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .command-result:hover,
+      .command-result.active {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .command-primary,
+      .command-secondary,
+      .command-kind {
+        min-width: 0;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .command-primary {
+        font: 800 0.86rem/1.15 Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .command-secondary,
+      .command-kind {
+        color: rgba(255, 255, 255, 0.55);
+        font: 700 0.72rem/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .command-empty {
+        margin: 0;
+        padding: 1.5rem;
+        color: rgba(255, 255, 255, 0.58);
+        text-align: center;
+        font: 750 0.82rem/1.35 Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
       .context-menu[hidden] {
         display: none;
       }
@@ -422,8 +527,12 @@ class Taskbar extends HTMLElement {
     this.Container = Container;
     this.Launcher = Launcher;
     this.ContextMenu = ContextMenu;
+    this.CommandPalette = CommandPalette;
     this.RevealZone = RevealZone;
     this.ShowAllApps = false;
+    this.commandQuery = "";
+    this.commandResults = [];
+    this.commandActiveIndex = 0;
     this.clockTimer = null;
     this.outsidePointerHandler = null;
     this.keydownHandler = null;
@@ -440,12 +549,21 @@ class Taskbar extends HTMLElement {
       if (!event.composedPath().includes(this)) {
         this.closeLauncher();
         this.closeContextMenu();
+        this.closeCommandPalette();
       }
     };
     this.keydownHandler = (event) => {
       if (event.key === "Escape") {
+        if (!this.CommandPalette.hidden) {
+          this.closeCommandPalette();
+          return;
+        }
         this.closeLauncher();
         this.closeContextMenu();
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === "k" || event.code === "Space")) {
+        event.preventDefault();
+        this.toggleCommandPalette();
       }
     };
     this.contextMenuHandler = (event) => {
@@ -559,6 +677,175 @@ class Taskbar extends HTMLElement {
 
   closeLauncher() {
     this.Launcher.hidden = true;
+  }
+
+  async toggleCommandPalette() {
+    if (this.CommandPalette.hidden) {
+      await this.openCommandPalette();
+    } else {
+      this.closeCommandPalette();
+    }
+  }
+
+  async openCommandPalette() {
+    this.closeLauncher();
+    this.closeContextMenu();
+    const { availableApplications } = await import("../entry.js");
+    this.currentApplications = availableApplications;
+    this.commandQuery = "";
+    this.commandActiveIndex = 0;
+    this.CommandPalette.hidden = false;
+    this.renderCommandPalette();
+  }
+
+  closeCommandPalette() {
+    this.CommandPalette.hidden = true;
+  }
+
+  renderCommandPalette() {
+    this.commandResults = this.getCommandResults(this.commandQuery);
+    this.CommandPalette.innerHTML = `
+      <input class="command-search" type="search" placeholder="Search apps and files" value="${this.escapeHtml(this.commandQuery)}" />
+      <div class="command-results">
+        ${this.commandResults.length ? this.renderCommandGroups(this.commandResults) : "<p class=\"command-empty\">No apps or files found.</p>"}
+      </div>
+    `;
+
+    const Search = this.CommandPalette.querySelector(".command-search");
+    Search?.focus();
+    Search?.setSelectionRange(Search.value.length, Search.value.length);
+    Search?.addEventListener("input", (event) => {
+      this.commandQuery = event.target.value;
+      this.commandActiveIndex = 0;
+      this.renderCommandPalette();
+    });
+    Search?.addEventListener("keydown", (event) => this.commandKeydownHandler(event));
+
+    this.CommandPalette.querySelectorAll(".command-result").forEach((button) => {
+      button.addEventListener("click", () => {
+        const Result = this.commandResults[Number(button.dataset.index)];
+        if (Result) this.runCommandResult(Result);
+      });
+    });
+  }
+
+  renderCommandGroups(results) {
+    const Groups = [
+      ["Apps", results.filter((result) => result.kind === "app")],
+      ["Files", results.filter((result) => result.kind !== "app")],
+    ].filter(([, items]) => items.length);
+
+    let Index = 0;
+    return Groups.map(([title, items]) => `
+      <section>
+        <h3 class="command-group-title">${title}</h3>
+        ${items.map((result) => {
+          const CurrentIndex = Index;
+          Index += 1;
+          return this.renderCommandResult(result, CurrentIndex);
+        }).join("")}
+      </section>
+    `).join("");
+  }
+
+  renderCommandResult(result, index) {
+    return `
+      <button class="command-result ${index === this.commandActiveIndex ? "active" : ""}" data-index="${index}" type="button">
+        ${result.icon}
+        <span>
+          <span class="command-primary">${this.escapeHtml(result.name)}</span>
+          <span class="command-secondary">${this.escapeHtml(result.detail)}</span>
+        </span>
+        <span class="command-kind">${this.escapeHtml(result.label)}</span>
+      </button>
+    `;
+  }
+
+  commandKeydownHandler(event) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      this.commandActiveIndex = Math.min(this.commandResults.length - 1, this.commandActiveIndex + 1);
+      this.renderCommandPalette();
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      this.commandActiveIndex = Math.max(0, this.commandActiveIndex - 1);
+      this.renderCommandPalette();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const Result = this.commandResults[this.commandActiveIndex];
+      if (Result) this.runCommandResult(Result);
+    }
+  }
+
+  getCommandResults(query) {
+    const Needle = query.trim().toLowerCase();
+    const Apps = (this.currentApplications || [])
+      .filter((app) => this.commandMatches([app.name, app.tag], Needle))
+      .map((app) => ({
+        kind: "app",
+        label: app.tag || "App",
+        name: app.name,
+        detail: "Open application",
+        icon: this.createIconElement(app.iconLabel || app.name, app.iconColor, app.name).outerHTML,
+        app,
+      }));
+
+    const Tree = FileSystem.loadTree();
+    const Files = Object.values(Tree.nodes || {})
+      .filter((node) => node.id !== FileSystem.ROOT_ID && this.commandMatches([node.name, node.type, this.getNodePathLabel(node.id)], Needle))
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+      .slice(0, 18)
+      .map((node) => ({
+        kind: node.type,
+        label: node.type === "folder" ? "Folder" : node.type === "shortcut" ? "Shortcut" : "File",
+        name: node.name,
+        detail: this.getNodePathLabel(node.id),
+        icon: this.createIconElement(node.metadata?.iconLabel || node.name, node.metadata?.iconColor || (node.type === "folder" ? "#f59e0b" : "#38bdf8"), node.name).outerHTML,
+        node,
+      }));
+
+    return [...Apps, ...Files].slice(0, 24);
+  }
+
+  commandMatches(values, query) {
+    if (!query) return true;
+    return values.filter(Boolean).some((value) => String(value).toLowerCase().includes(query));
+  }
+
+  getNodePathLabel(id) {
+    return FileSystem.getPath(id).map((node) => node.name).join(" / ");
+  }
+
+  async runCommandResult(result) {
+    this.closeCommandPalette();
+    if (result.kind === "app") {
+      this.openApp(result.app);
+      return;
+    }
+
+    if (result.node.type === "folder") {
+      const { availableApplications } = await import("../entry.js");
+      const FilesApp = availableApplications.find((app) => app.componentTag === "app-file-browser");
+      if (FilesApp) this.openApp(FilesApp, { folderId: result.node.id });
+      return;
+    }
+
+    if (result.node.type === "shortcut" && result.node.target?.kind === "app") {
+      const { availableApplications } = await import("../entry.js");
+      const App = availableApplications.find((app) => app.componentTag === result.node.target.componentTag);
+      if (App) this.openApp(App);
+      return;
+    }
+
+    document.dispatchEvent(new CustomEvent("browseros:open-app", {
+      detail: String(result.node.metadata?.mimeType || "").startsWith("image/")
+        ? { componentTag: "app-image-viewer", selectedId: result.node.id }
+        : { componentTag: "app-notepad", fileId: result.node.id },
+    }));
   }
 
   updateFullscreenState() {
@@ -913,6 +1200,14 @@ class Taskbar extends HTMLElement {
     this.parentNode.appendChild(NewWindow);
     this.updateTaskbar();
     this.closeLauncher();
+    document.dispatchEvent(new CustomEvent("browseros:notify", {
+      detail: {
+        title: app.name,
+        message: "Window opened",
+        tone: "success",
+        duration: 1800,
+      },
+    }));
   }
 
   createIconElement(label, color = "#4f8cff", iconName = label) {
@@ -921,6 +1216,15 @@ class Taskbar extends HTMLElement {
     Icon.style.setProperty("--icon-color", color);
     Icon.innerHTML = this.createAppIconSvg(iconName || label);
     return Icon;
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   createAppIconSvg(name) {
